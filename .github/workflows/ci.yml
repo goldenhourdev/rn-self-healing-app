@@ -30,3 +30,41 @@ jobs:
             "repository": "${{ github.repository }}",
             "branch": "main"
           }'
+
+name: Mobile CI
+on: [push]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      # STEP 1: Install (Allow failure to trigger Agent)
+      - name: Install Dependencies
+        id: install
+        continue-on-error: true
+        run: npm install
+
+      # STEP 2: Run Tests (Only if install succeeded)
+      - name: Run Jest Tests
+        id: run_tests
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        run: npm test
+
+      # STEP 3: Trigger Agent (If EITHER Install or Test failed)
+      - name: Notify AI Agent
+        if: always() && (steps.install.outcome == 'failure' || steps.run_tests.outcome == 'failure')
+        run: |
+          curl -X POST https://deviate-synopses-twins.ngrok-free.dev/webhook \
+          -H "Content-Type: application/json" \
+          -d '{
+            "run_id": "${{ github.run_id }}",
+            "repository": "${{ github.repository }}",
+            "branch": "main",
+            "failure_step": "${{ steps.install.outcome == 'failure' && 'install' || 'test' }}"
+          }'

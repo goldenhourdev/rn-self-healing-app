@@ -1,39 +1,6 @@
 name: Mobile CI
 on: [push]
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - run: npm install
-      - name: Install Dependencies
-        id: install_deps
-        continue-on-error: true # Crucial: Allows the workflow to continue even if install fails
-        run: npm install
-
-      - name: Run Jest Tests
-        if: steps.install_deps.outcome == 'success'
-        id: run_tests
-        continue-on-error: true
-        run: npm test
-        
-      - name: Notify AI Agent
-        if: steps.run_tests.outcome == 'failure'
-        run: |
-          curl -X POST https://deviate-synopses-twins.ngrok-free.dev/webhook \
-          -H "Content-Type: application/json" \
-          -d '{
-            "run_id": "${{ github.run_id }}",
-            "repository": "${{ github.repository }}",
-            "branch": "main"
-          }'
-
-name: Mobile CI
-on: [push]
-jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
